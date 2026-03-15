@@ -1,6 +1,6 @@
-# PVBatteryEconomics (IP-Symcon)
+# PVBatteryEconomics (Symcon)
 
-IP-Symcon Modul zur wirtschaftlichen Bewertung eines Batteriespeichers auf Basis von stündlich aggregierten Zählerdaten.
+Symcon Modul zur wirtschaftlichen Bewertung eines Batteriespeichers auf Basis von stündlich aggregierten Zählerdaten.
 
 Das Modul vergleicht:
 - Szenario ohne Batterie
@@ -39,7 +39,7 @@ Interne Festwerte:
 
 ## Voraussetzungen
 
-- IP-Symcon ab Version 8.0
+- Symcon ab Version 8.0
 - Zwei geeignete Zählervariablen:
   - Netzbezug
   - Netzeinspeisung
@@ -47,8 +47,8 @@ Interne Festwerte:
 
 ## Installation
 
-1. Repository nach `IP-Symcon/modules` kopieren oder klonen.
-2. In IP-Symcon: `Kerninstanzen -> Module` neu laden.
+1. Repository nach `Symcon/modules` kopieren oder klonen.
+2. In Symcon: `Kerninstanzen -> Module` neu laden.
 3. Instanz `PV Battery Economics` anlegen.
 
 ## Konfiguration
