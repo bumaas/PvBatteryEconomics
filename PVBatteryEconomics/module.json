@@ -1,0 +1,14 @@
+{
+  "id": "{8AF3D3EC-CC6C-4E53-8ECA-28F5769D26C8}",
+  "name": "PVBatteryEconomics",
+  "type": 3,
+  "vendor": "Local",
+  "aliases": [
+    "PV Battery Economics"
+  ],
+  "parentRequirements": [],
+  "childRequirements": [],
+  "implemented": [],
+  "prefix": "PVBAT",
+  "url": ""
+}

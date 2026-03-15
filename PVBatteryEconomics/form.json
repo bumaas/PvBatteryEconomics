@@ -1,0 +1,196 @@
+{
+  "elements": [
+    {
+      "type": "Label",
+      "caption": "Dieses Modul simuliert stundenweise, wie sich ein Batteriespeicher auf Netzbezug, Einspeisung und Kosten auswirkt."
+    },
+    {
+      "type": "Label",
+      "caption": "Hinweis: Für plausible Ergebnisse sind korrekt aggregierte kWh-Werte entscheidend."
+    },
+    {
+      "type": "ExpansionPanel",
+      "caption": "1) Zeitraum",
+      "items": [
+        {
+          "type": "Label",
+          "caption": "Bitte den Auswertezeitraum festlegen. Für eine belastbare Aussage wird typischerweise ein volles Jahr verwendet."
+        },
+        {
+          "type": "RowLayout",
+          "items": [
+            {
+              "type": "ValidationTextBox",
+              "name": "StartDate",
+              "caption": "Datum von (YYYY-MM-DD HH:MM:SS)"
+            },
+            {
+              "type": "ValidationTextBox",
+              "name": "EndDate",
+              "caption": "Datum bis (YYYY-MM-DD HH:MM:SS)"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "ExpansionPanel",
+      "caption": "2) Datenquellen",
+      "items": [
+        {
+          "type": "Label",
+          "caption": "Wähle die Zählervariablen für Netzbezug und Netzeinspeisung."
+        },
+        {
+          "type": "RowLayout",
+          "items": [
+            {
+              "type": "SelectVariable",
+              "name": "GridImportVarID",
+              "caption": "Zähler Netzbezug"
+            },
+            {
+              "type": "SelectVariable",
+              "name": "GridExportVarID",
+              "caption": "Zähler Netzeinspeisung"
+            }
+          ]
+        },
+        {
+          "type": "Label",
+          "caption": "Umrechnungsfaktor auf kWh (-): 1.0 bei kWh-Werten, 0.001 bei Wh-Werten."
+        },
+        {
+          "type": "RowLayout",
+          "items": [
+            {
+              "type": "NumberSpinner",
+              "name": "CounterUnitToKWh",
+              "caption": "Umrechnungsfaktor auf kWh (-)",
+              "digits": 4
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "ExpansionPanel",
+      "caption": "3) Preise",
+      "items": [
+        {
+          "type": "Label",
+          "caption": "Trage Bezugspreis und Einspeisevergütung in EUR/kWh ein."
+        },
+        {
+          "type": "RowLayout",
+          "items": [
+            {
+              "type": "NumberSpinner",
+              "name": "PriceImport",
+              "caption": "Bezugspreis (EUR/kWh)",
+              "digits": 4
+            },
+            {
+              "type": "NumberSpinner",
+              "name": "PriceExport",
+              "caption": "Einspeisevergütung (EUR/kWh)",
+              "digits": 4
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "ExpansionPanel",
+      "caption": "4) Batterieparameter",
+      "items": [
+        {
+          "type": "Label",
+          "caption": "Technische Daten des geplanten Speichers. Wirkungsgrade als Wert zwischen 0 und 1."
+        },
+        {
+          "type": "RowLayout",
+          "items": [
+            {
+              "type": "NumberSpinner",
+              "name": "BatteryCapacity",
+              "caption": "Nutzbare Kapazität (kWh)",
+              "digits": 3
+            }
+          ]
+        },
+        {
+          "type": "RowLayout",
+          "items": [
+            {
+              "type": "NumberSpinner",
+              "name": "BatteryMaxCharge",
+              "caption": "Max. Ladeleistung (kW)",
+              "digits": 3
+            },
+            {
+              "type": "NumberSpinner",
+              "name": "BatteryMaxDischarge",
+              "caption": "Max. Entladeleistung (kW)",
+              "digits": 3
+            }
+          ]
+        },
+        {
+          "type": "RowLayout",
+          "items": [
+            {
+              "type": "NumberSpinner",
+              "name": "BatteryChargeEff",
+              "caption": "Ladewirkungsgrad (-)",
+              "digits": 4
+            },
+            {
+              "type": "NumberSpinner",
+              "name": "BatteryDischargeEff",
+              "caption": "Entladewirkungsgrad (-)",
+              "digits": 4
+            }
+          ]
+        },
+        {
+          "type": "NumberSpinner",
+          "name": "BatteryInvest",
+          "caption": "Investition (EUR)",
+          "digits": 2
+        }
+      ]
+    },
+    {
+      "type": "ExpansionPanel",
+      "caption": "5) Plausibilität",
+      "items": [
+        {
+          "type": "Label",
+          "caption": "Wenn der berechnete Netzbezug darunter liegt, erscheint ein Hinweis auf möglich falsche Einheiten/Archiveinstellungen."
+        },
+        {
+          "type": "NumberSpinner",
+          "name": "LowImportWarningThreshold",
+          "caption": "Warnschwelle niedriger Netzbezug (kWh/Jahr)",
+          "digits": 1
+        }
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "type": "Button",
+      "caption": "Berechnung starten",
+      "onClick": "PVBAT_Calculate($id);"
+    }
+  ],
+  "status": [
+    {
+      "code": 201,
+      "icon": "error",
+      "caption": "Konfiguration unvollständig"
+    }
+  ]
+}
+
