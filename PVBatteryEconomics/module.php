@@ -32,6 +32,24 @@ class PVBatteryEconomics extends IPSModuleStrict
 
         $this->RegisterPropertyFloat('LowImportWarningThreshold', 500.0);
 
+        $this->registerStatusVariables();
+    }
+
+    public function ApplyChanges(): void
+    {
+        parent::ApplyChanges();
+        $this->registerStatusVariables();
+
+        if ($this->ReadPropertyInteger('GridImportVarID') <= 0 || $this->ReadPropertyInteger('GridExportVarID') <= 0) {
+            $this->SetStatus(self::STATUS_CONFIG_INCOMPLETE);
+            return;
+        }
+
+        $this->SetStatus(IS_ACTIVE);
+    }
+
+    private function registerStatusVariables(): void
+    {
         $this->RegisterVariableString('Summary', 'Zusammenfassung', '', 10);
         $this->RegisterVariableFloat('BaselineImportKWh', 'Netzbezug ohne Batterie (kWh)', '~Electricity', 20);
         $this->RegisterVariableFloat('BaselineExportKWh', 'Netzeinspeisung ohne Batterie (kWh)', '~Electricity', 30);
@@ -45,21 +63,13 @@ class PVBatteryEconomics extends IPSModuleStrict
         $this->RegisterVariableFloat('PaybackYears', 'Amortisation (Jahre)', '', 90);
         $this->RegisterVariableFloat('EquivalentCycles', 'Äquivalente Vollzyklen', '', 100);
 
+        $this->RegisterVariableFloat('AvoidedImportKWh', 'Vermiedener Netzbezug (kWh)', '~Electricity', 101);
+        $this->RegisterVariableFloat('LostFeedInKWh', 'Weniger Einspeisung (kWh)', '~Electricity', 102);
+        $this->RegisterVariableFloat('AvoidedImportCostEUR', 'Vermiedene Bezugskosten (EUR)', '~Euro', 103);
+        $this->RegisterVariableFloat('LostFeedInRevenueEUR', 'Entgangene Einspeisevergütung (EUR)', '~Euro', 104);
         $this->RegisterVariableFloat('ChargedFromPvKWh', 'In Batterie geladen (kWh)', '~Electricity', 110);
         $this->RegisterVariableFloat('DischargedToLoadKWh', 'Aus Batterie an Last (kWh)', '~Electricity', 120);
         $this->RegisterVariableFloat('BatteryLossesKWh', 'Batterieverluste (kWh)', '~Electricity', 130);
-    }
-
-    public function ApplyChanges(): void
-    {
-        parent::ApplyChanges();
-
-        if ($this->ReadPropertyInteger('GridImportVarID') <= 0 || $this->ReadPropertyInteger('GridExportVarID') <= 0) {
-            $this->SetStatus(self::STATUS_CONFIG_INCOMPLETE);
-            return;
-        }
-
-        $this->SetStatus(IS_ACTIVE);
     }
 
     public function Calculate(): void
@@ -99,12 +109,17 @@ class PVBatteryEconomics extends IPSModuleStrict
             $baseCost = $baseline['import_kwh'] * $priceImport - $baseline['export_kwh'] * $priceExport;
             $simCost = $simulation['import_kwh'] * $priceImport - $simulation['export_kwh'] * $priceExport;
             $saving = $baseCost - $simCost;
+            $avoidedImportKWh = max(0.0, $baseline['import_kwh'] - $simulation['import_kwh']);
+            $lostFeedInKWh = max(0.0, $baseline['export_kwh'] - $simulation['export_kwh']);
+            $avoidedImportCostEUR = $avoidedImportKWh * $priceImport;
+            $lostFeedInRevenueEUR = $lostFeedInKWh * $priceExport;
+            $netBenefitEUR = $avoidedImportCostEUR - $lostFeedInRevenueEUR;
 
             $capacity = $this->ReadPropertyFloat('BatteryCapacity');
             $cycles = $capacity > 0.0 ? ($simulation['discharged_to_load_kwh'] / $capacity) : 0.0;
 
             $invest = $this->ReadPropertyFloat('BatteryInvest');
-            $paybackYears = $saving > 0.0 ? ($invest / $saving) : -1.0;
+            $paybackYears = $netBenefitEUR > 0.0 ? ($invest / $netBenefitEUR) : -1.0;
 
             $this->SetValue('BaselineImportKWh', round($baseline['import_kwh'], 3));
             $this->SetValue('BaselineExportKWh', round($baseline['export_kwh'], 3));
@@ -117,12 +132,28 @@ class PVBatteryEconomics extends IPSModuleStrict
             $this->SetValue('SavingEUR', round($saving, 2));
             $this->SetValue('PaybackYears', $paybackYears < 0 ? 0.0 : round($paybackYears, 2));
             $this->SetValue('EquivalentCycles', round($cycles, 2));
+            $this->SetValue('AvoidedImportKWh', round($avoidedImportKWh, 3));
+            $this->SetValue('LostFeedInKWh', round($lostFeedInKWh, 3));
+            $this->SetValue('AvoidedImportCostEUR', round($avoidedImportCostEUR, 2));
+            $this->SetValue('LostFeedInRevenueEUR', round($lostFeedInRevenueEUR, 2));
 
             $this->SetValue('ChargedFromPvKWh', round($simulation['charged_from_pv_kwh'], 3));
             $this->SetValue('DischargedToLoadKWh', round($simulation['discharged_to_load_kwh'], 3));
             $this->SetValue('BatteryLossesKWh', round($simulation['battery_losses_kwh'], 3));
 
-            $summary = $this->buildSummary($hourKeys, $baseline, $baseCost, $simulation, $simCost, $saving, $paybackYears);
+            $summary = $this->buildSummary(
+                $hourKeys,
+                $baseline,
+                $baseCost,
+                $simulation,
+                $simCost,
+                $saving,
+                $paybackYears,
+                $avoidedImportKWh,
+                $lostFeedInKWh,
+                $avoidedImportCostEUR,
+                $lostFeedInRevenueEUR
+            );
             $this->SetValue('Summary', $summary);
 
             $dailyValues = $this->buildPeriodValues(
@@ -145,8 +176,7 @@ class PVBatteryEconomics extends IPSModuleStrict
                 $priceExport,
                 'Y-m'
             );
-            $this->SendDebug('DailyValues', json_encode($dailyValues), 0);
-            $this->SendDebug('MonthlyValues', json_encode($monthlyValues), 0);
+            $this->sendPeriodDebug($dailyValues, $monthlyValues);
 
             $this->SetStatus(IS_ACTIVE);
         } catch (Throwable $e) {
@@ -157,8 +187,19 @@ class PVBatteryEconomics extends IPSModuleStrict
         }
     }
 
-    private function buildSummary(array $hourKeys, array $baseline, float $baseCost, array $simulation, float $simCost, float $saving, float $paybackYears): string
-    {
+    private function buildSummary(
+        array $hourKeys,
+        array $baseline,
+        float $baseCost,
+        array $simulation,
+        float $simCost,
+        float $saving,
+        float $paybackYears,
+        float $avoidedImportKWh,
+        float $lostFeedInKWh,
+        float $avoidedImportCostEUR,
+        float $lostFeedInRevenueEUR
+    ): string {
         $lines = [];
         $lines[] = '--- Batteriesimulation (stündlich) ---';
         $lines[] = sprintf('Zeitraum: %s bis %s', date('Y-m-d H:i', $hourKeys[0]), date('Y-m-d H:i', end($hourKeys) + self::SECONDS_PER_HOUR));
@@ -175,6 +216,11 @@ class PVBatteryEconomics extends IPSModuleStrict
         $lines[] = '';
         $lines[] = '[Wirtschaftlichkeit]';
         $lines[] = sprintf('Ersparnis: %.2f EUR', $saving);
+        $lines[] = sprintf('Vermiedener Netzbezug: %.1f kWh', $avoidedImportKWh);
+        $lines[] = sprintf('Weniger Einspeisung: %.1f kWh', $lostFeedInKWh);
+        $lines[] = sprintf('Vermiedene Bezugskosten: %.2f EUR', $avoidedImportCostEUR);
+        $lines[] = sprintf('Entgangene Einspeisevergütung: %.2f EUR', $lostFeedInRevenueEUR);
+        $lines[] = sprintf('Netto-Vorteil: %.2f EUR', $avoidedImportCostEUR - $lostFeedInRevenueEUR);
         if ($paybackYears > 0) {
             $lines[] = sprintf('Amortisation: %.1f Jahre', $paybackYears);
         } else {
@@ -387,4 +433,29 @@ class PVBatteryEconomics extends IPSModuleStrict
         ksort($periods);
         return $periods;
     }
+
+    private function sendPeriodDebug(array $dailyValues, array $monthlyValues): void
+    {
+        $daysByMonth = [];
+        foreach ($dailyValues as $dayKey => $values) {
+            $monthKey = substr($dayKey, 0, 7);
+            if (!isset($daysByMonth[$monthKey])) {
+                $daysByMonth[$monthKey] = [];
+            }
+            $daysByMonth[$monthKey][$dayKey] = $values;
+        }
+
+        ksort($daysByMonth);
+        foreach ($daysByMonth as $monthKey => $monthDays) {
+            ksort($monthDays);
+            foreach ($monthDays as $dayKey => $dayValues) {
+                $this->SendDebug('DayValue', $dayKey . ' ' . json_encode($dayValues), 0);
+            }
+
+            if (isset($monthlyValues[$monthKey])) {
+                $this->SendDebug('MonthValue', $monthKey . ' ' . json_encode($monthlyValues[$monthKey]), 0);
+            }
+        }
+    }
 }
+

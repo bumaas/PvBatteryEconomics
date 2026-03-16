@@ -1,4 +1,4 @@
-# PVBatteryEconomics (Symcon)
+﻿# PVBatteryEconomics (Symcon)
 
 Symcon Modul zur wirtschaftlichen Bewertung eines Batteriespeichers auf Basis von stündlich aggregierten Zählerdaten.
 
@@ -24,8 +24,8 @@ und berechnet daraus u. a. Kosten, Ersparnis und Amortisation.
   - Aus Batterie an Last abgegeben (kWh)
   - Batterieverluste (kWh)
 - Debug-Ausgaben für:
-  - Tageswerte (`DailyValues`)
-  - Monatswerte (`MonthlyValues`)
+  - Tageswerte (`DayValue`)
+  - Monatswerte (`MonthValue`)
 
 ## Vereinfachte Bedienung
 
@@ -78,8 +78,10 @@ Interne Festwerte:
 
 Im Symcon-Debug der Instanz erscheinen JSON-Ausgaben:
 
-- `DailyValues` mit Schlüsseln je Tag (`YYYY-MM-DD`)
-- `MonthlyValues` mit Schlüsseln je Monat (`YYYY-MM`)
+- `DayValue` als einzelne Debug-Ausgabe je Tag (`YYYY-MM-DD`)
+- `MonthValue` als einzelne Debug-Ausgabe je Monat (`YYYY-MM`)
+
+Die Ausgabe erfolgt monatlich gruppiert: erst alle Tage eines Monats, dann der Monatswert.
 
 Je Periode enthalten:
 - `baseline_import_kwh`
@@ -94,3 +96,4 @@ Je Periode enthalten:
 
 - Wenn Ergebnisse unplausibel klein wirken, ist meist die Einheit/Archiv-Aggregation die Ursache.
 - Für belastbare Aussagen empfiehlt sich ein vollständiges Jahr als Zeitraum.
+
