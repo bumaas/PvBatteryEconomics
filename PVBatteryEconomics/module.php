@@ -6,6 +6,7 @@ class PVBatteryEconomics extends IPSModuleStrict
 {
     private const int STATUS_CONFIG_INCOMPLETE = 201;
     private const int SECONDS_PER_HOUR = 3600;
+    private const int SECONDS_PER_DAY = 86400;
     private const string DEFAULT_AGGREGATE_FIELD = 'Avg';
     private const float DEFAULT_INITIAL_SOC_RATIO = 0.5;
 
@@ -22,6 +23,8 @@ class PVBatteryEconomics extends IPSModuleStrict
 
         $this->RegisterPropertyFloat('PriceImport', 0.32);
         $this->RegisterPropertyFloat('PriceExport', 0.082);
+        $this->RegisterPropertyInteger('ImportPriceVarID', 0);
+        $this->RegisterPropertyFloat('ImportPriceUnitToEur', 0.01);
 
         $this->RegisterPropertyFloat('BatteryCapacity', 10.0);
         $this->RegisterPropertyFloat('BatteryMaxCharge', 4.6);
@@ -93,25 +96,54 @@ class PVBatteryEconomics extends IPSModuleStrict
 
             $hourlyImport = $this->getHourlyEnergyFromAggregates($archiveId, $importVarId, $startTs, $endTs, $unitToKwh);
             $hourlyExport = $this->getHourlyEnergyFromAggregates($archiveId, $exportVarId, $startTs, $endTs, $unitToKwh);
+            $expectedHours = intdiv(
+                intdiv($endTs, self::SECONDS_PER_HOUR) * self::SECONDS_PER_HOUR - intdiv($startTs, self::SECONDS_PER_HOUR) * self::SECONDS_PER_HOUR,
+                self::SECONDS_PER_HOUR
+            ) + 1;
+            if (count($hourlyImport) === 0 || count($hourlyExport) === 0) {
+                throw new RuntimeException(sprintf(
+                    'Keine ausreichenden Stundendaten im Zeitraum %s bis %s. Netzbezug: %d Stunden, Einspeisung: %d Stunden, erwartet: %d Stunden.',
+                    date('Y-m-d H:i:s', $startTs),
+                    date('Y-m-d H:i:s', $endTs),
+                    count($hourlyImport),
+                    count($hourlyExport),
+                    $expectedHours
+                ));
+            }
 
             $hourKeys = array_values(array_intersect(array_keys($hourlyImport), array_keys($hourlyExport)));
             sort($hourKeys);
             if ($hourKeys === []) {
-                throw new RuntimeException('Keine gemeinsamen Stundenwerte für Bezug und Einspeisung gefunden.');
+                throw new RuntimeException(sprintf(
+                    'Keine gemeinsamen Stundenwerte gefunden. Netzbezug: %d Stunden, Einspeisung: %d Stunden im Zeitraum %s bis %s.',
+                    count($hourlyImport),
+                    count($hourlyExport),
+                    date('Y-m-d H:i:s', $startTs),
+                    date('Y-m-d H:i:s', $endTs)
+                ));
             }
 
             $baseline = $this->calculateBaseline($hourKeys, $hourlyImport, $hourlyExport);
             $simulation = $this->simulateBattery($hourKeys, $hourlyImport, $hourlyExport);
 
-            $priceImport = $this->ReadPropertyFloat('PriceImport');
             $priceExport = $this->ReadPropertyFloat('PriceExport');
+            $hourlyImportPrice = $this->getHourlyImportPrices($archiveId, $hourKeys, $startTs, $endTs);
 
-            $baseCost = $baseline['import_kwh'] * $priceImport - $baseline['export_kwh'] * $priceExport;
-            $simCost = $simulation['import_kwh'] * $priceImport - $simulation['export_kwh'] * $priceExport;
-            $saving = $baseCost - $simCost;
+            $economics = $this->calculateEconomics(
+                $hourKeys,
+                $hourlyImport,
+                $hourlyExport,
+                $simulation['hourly_import_kwh'],
+                $simulation['hourly_export_kwh'],
+                $hourlyImportPrice,
+                $priceExport
+            );
+            $baseCost = $economics['base_cost_eur'];
+            $simCost = $economics['sim_cost_eur'];
+            $saving = $economics['saving_eur'];
             $avoidedImportKWh = max(0.0, $baseline['import_kwh'] - $simulation['import_kwh']);
             $lostFeedInKWh = max(0.0, $baseline['export_kwh'] - $simulation['export_kwh']);
-            $avoidedImportCostEUR = $avoidedImportKWh * $priceImport;
+            $avoidedImportCostEUR = $economics['avoided_import_cost_eur'];
             $lostFeedInRevenueEUR = $lostFeedInKWh * $priceExport;
             $netBenefitEUR = $avoidedImportCostEUR - $lostFeedInRevenueEUR;
 
@@ -162,7 +194,7 @@ class PVBatteryEconomics extends IPSModuleStrict
                 $hourlyExport,
                 $simulation['hourly_import_kwh'],
                 $simulation['hourly_export_kwh'],
-                $priceImport,
+                $hourlyImportPrice,
                 $priceExport,
                 'Y-m-d'
             );
@@ -172,7 +204,7 @@ class PVBatteryEconomics extends IPSModuleStrict
                 $hourlyExport,
                 $simulation['hourly_import_kwh'],
                 $simulation['hourly_export_kwh'],
-                $priceImport,
+                $hourlyImportPrice,
                 $priceExport,
                 'Y-m'
             );
@@ -395,7 +427,7 @@ class PVBatteryEconomics extends IPSModuleStrict
         array $baselineExport,
         array $simImport,
         array $simExport,
-        float $priceImport,
+        array $hourlyImportPrice,
         float $priceExport,
         string $periodFormat
     ): array {
@@ -408,22 +440,31 @@ class PVBatteryEconomics extends IPSModuleStrict
                     'baseline_import_kwh' => 0.0,
                     'baseline_export_kwh' => 0.0,
                     'sim_import_kwh' => 0.0,
-                    'sim_export_kwh' => 0.0
+                    'sim_export_kwh' => 0.0,
+                    'baseline_import_cost_eur' => 0.0,
+                    'sim_import_cost_eur' => 0.0
                 ];
             }
 
-            $periods[$periodKey]['baseline_import_kwh'] += max(0.0, (float) $baselineImport[$ts]);
+            $baseImportKwh = max(0.0, (float) $baselineImport[$ts]);
+            $simImportKwh = max(0.0, (float) $simImport[$ts]);
+            $priceImportEur = isset($hourlyImportPrice[$ts]) ? max(0.0, (float) $hourlyImportPrice[$ts]) : 0.0;
+
+            $periods[$periodKey]['baseline_import_kwh'] += $baseImportKwh;
             $periods[$periodKey]['baseline_export_kwh'] += max(0.0, (float) $baselineExport[$ts]);
-            $periods[$periodKey]['sim_import_kwh'] += max(0.0, (float) $simImport[$ts]);
+            $periods[$periodKey]['sim_import_kwh'] += $simImportKwh;
             $periods[$periodKey]['sim_export_kwh'] += max(0.0, (float) $simExport[$ts]);
+            $periods[$periodKey]['baseline_import_cost_eur'] += $baseImportKwh * $priceImportEur;
+            $periods[$periodKey]['sim_import_cost_eur'] += $simImportKwh * $priceImportEur;
         }
 
         foreach ($periods as $periodKey => $values) {
-            $baseCost = $values['baseline_import_kwh'] * $priceImport - $values['baseline_export_kwh'] * $priceExport;
-            $simCost = $values['sim_import_kwh'] * $priceImport - $values['sim_export_kwh'] * $priceExport;
+            $baseCost = $values['baseline_import_cost_eur'] - $values['baseline_export_kwh'] * $priceExport;
+            $simCost = $values['sim_import_cost_eur'] - $values['sim_export_kwh'] * $priceExport;
             $periods[$periodKey]['baseline_cost_eur'] = round($baseCost, 2);
             $periods[$periodKey]['sim_cost_eur'] = round($simCost, 2);
             $periods[$periodKey]['saving_eur'] = round($baseCost - $simCost, 2);
+            unset($periods[$periodKey]['baseline_import_cost_eur'], $periods[$periodKey]['sim_import_cost_eur']);
             $periods[$periodKey]['baseline_import_kwh'] = round($values['baseline_import_kwh'], 3);
             $periods[$periodKey]['baseline_export_kwh'] = round($values['baseline_export_kwh'], 3);
             $periods[$periodKey]['sim_import_kwh'] = round($values['sim_import_kwh'], 3);
@@ -449,13 +490,174 @@ class PVBatteryEconomics extends IPSModuleStrict
         foreach ($daysByMonth as $monthKey => $monthDays) {
             ksort($monthDays);
             foreach ($monthDays as $dayKey => $dayValues) {
-                $this->SendDebug('DayValue', $dayKey . ' ' . json_encode($dayValues), 0);
+                $this->SendDebug('DayValue', $dayKey . ' ' . $this->encodeDebugJson($dayValues), 0);
             }
 
             if (isset($monthlyValues[$monthKey])) {
-                $this->SendDebug('MonthValue', $monthKey . ' ' . json_encode($monthlyValues[$monthKey]), 0);
+                $this->SendDebug('MonthValue', $monthKey . ' ' . $this->encodeDebugJson($monthlyValues[$monthKey]), 0);
             }
         }
     }
+
+    private function encodeDebugJson(array $values): string
+    {
+        try {
+            return json_encode($values, JSON_THROW_ON_ERROR);
+        } catch (JsonException $e) {
+            return '{"error":"json_encode failed"}';
+        }
+    }
+
+    private function getHourlyImportPrices(int $archiveId, array $hourKeys, int $startTs, int $endTs): array
+    {
+        $priceVarId = $this->ReadPropertyInteger('ImportPriceVarID');
+        if ($priceVarId <= 0) {
+            $fallbackPriceEur = max(0.0, $this->ReadPropertyFloat('PriceImport'));
+            $prices = [];
+            foreach ($hourKeys as $ts) {
+                $prices[$ts] = $fallbackPriceEur;
+            }
+            return $prices;
+        }
+
+        $unitToEur = max(0.0, $this->ReadPropertyFloat('ImportPriceUnitToEur'));
+        $hourlyDynamic = $this->getHourlyScalarValues($archiveId, $priceVarId, $startTs, $endTs, $unitToEur);
+        ksort($hourlyDynamic);
+        $firstAvailableTs = array_key_first($hourlyDynamic);
+        $lastAvailableTs = array_key_last($hourlyDynamic);
+        $this->SendDebug(
+            'ImportPriceCoverage',
+            sprintf(
+                'Preisvariable %d: %d Stundenwerte geladen, erste verfuegbare Stunde: %s, letzte verfuegbare Stunde: %s',
+                $priceVarId,
+                count($hourlyDynamic),
+                $firstAvailableTs === null ? 'n/a' : date('Y-m-d H:i:s', (int) $firstAvailableTs),
+                $lastAvailableTs === null ? 'n/a' : date('Y-m-d H:i:s', (int) $lastAvailableTs)
+            ),
+            0
+        );
+
+        $prices = [];
+        $missingHours = [];
+        foreach ($hourKeys as $ts) {
+            if (isset($hourlyDynamic[$ts])) {
+                $prices[$ts] = max(0.0, (float) $hourlyDynamic[$ts]);
+                continue;
+            }
+            $missingHours[] = $ts;
+        }
+
+        if (count($missingHours) > 0) {
+            $this->SendDebug(
+                'ImportPriceMissingHour',
+                sprintf(
+                    'Preisvariable %d unvollstaendig: %d von %d benoetigten Stunden vorhanden. Erste fehlende Stunde: %s.',
+                    $priceVarId,
+                    count($prices),
+                    count($hourKeys),
+                    date('Y-m-d H:i:s', $missingHours[0])
+                ),
+                0
+            );
+            throw new RuntimeException(sprintf(
+                'Dynamischer Bezugspreis unvollstaendig. Vorhanden: %d von %d Stunden. Erste fehlende Stunde: %s (Preisvariable %d).',
+                count($prices),
+                count($hourKeys),
+                date('Y-m-d H:i:s', $missingHours[0]),
+                $priceVarId
+            ));
+        }
+
+        return $prices;
+    }
+
+    private function getHourlyScalarValues(int $archiveId, int $varId, int $startTs, int $endTs, float $unitFactor): array
+    {
+        $firstHour = intdiv($startTs, self::SECONDS_PER_HOUR) * self::SECONDS_PER_HOUR;
+        $lastHourStart = intdiv($endTs, self::SECONDS_PER_HOUR) * self::SECONDS_PER_HOUR;
+        $until = $lastHourStart + self::SECONDS_PER_HOUR;
+
+        $hours = [];
+        $rows = AC_GetAggregatedValues($archiveId, $varId, 0, $firstHour, $until, 0);
+        if (is_array($rows) && count($rows) > 0) {
+            foreach ($rows as $row) {
+                if (!isset($row['TimeStamp'])) {
+                    continue;
+                }
+
+                $hourStart = $this->mapRowToHourStart((int) $row['TimeStamp'], $firstHour, $lastHourStart);
+                if ($hourStart === null) {
+                    continue;
+                }
+
+                $value = $this->extractHourlyScalarValue($row, $unitFactor);
+                if ($value === null) {
+                    continue;
+                }
+
+                $hours[$hourStart] = max(0.0, $value);
+            }
+        }
+
+        if (count($hours) > 0) {
+            return $hours;
+        }
+
+        throw new RuntimeException(sprintf('Keine Aggregatwerte fuer dynamischen Bezugspreis gefunden (Variable %d). Bitte Logging/Archivierung und Zeitraum pruefen.', $varId));
+    }
+
+    private function extractHourlyScalarValue(array $row, float $unitFactor): ?float
+    {
+        if (isset($row['Avg']) && is_numeric($row['Avg'])) {
+            return (float) $row['Avg'] * $unitFactor;
+        }
+        if (isset($row['Max'], $row['Min']) && is_numeric($row['Max']) && is_numeric($row['Min'])) {
+            return (((float) $row['Max'] + (float) $row['Min']) / 2.0) * $unitFactor;
+        }
+
+        return null;
+    }
+
+    private function calculateEconomics(
+        array $hourKeys,
+        array $baselineImport,
+        array $baselineExport,
+        array $simImport,
+        array $simExport,
+        array $hourlyImportPrice,
+        float $priceExport
+    ): array {
+        $baseImportCost = 0.0;
+        $simImportCost = 0.0;
+        $lostFeedInKwh = 0.0;
+
+        foreach ($hourKeys as $ts) {
+            $priceImport = isset($hourlyImportPrice[$ts]) ? max(0.0, (float) $hourlyImportPrice[$ts]) : 0.0;
+            $baseImport = max(0.0, (float) $baselineImport[$ts]);
+            $simImportValue = max(0.0, (float) $simImport[$ts]);
+            $baseExport = max(0.0, (float) $baselineExport[$ts]);
+            $simExportValue = max(0.0, (float) $simExport[$ts]);
+
+            $baseImportCost += $baseImport * $priceImport;
+            $simImportCost += $simImportValue * $priceImport;
+            $lostFeedInKwh += max(0.0, $baseExport - $simExportValue);
+        }
+
+        $baseExportRevenue = max(0.0, array_sum($baselineExport)) * $priceExport;
+        $simExportRevenue = max(0.0, array_sum($simExport)) * $priceExport;
+        $baseCost = $baseImportCost - $baseExportRevenue;
+        $simCost = $simImportCost - $simExportRevenue;
+
+        return [
+            'base_cost_eur' => $baseCost,
+            'sim_cost_eur' => $simCost,
+            'saving_eur' => $baseCost - $simCost,
+            'avoided_import_cost_eur' => $baseImportCost - $simImportCost,
+            'lost_feed_in_kwh' => $lostFeedInKwh
+        ];
+    }
 }
+
+
+
 

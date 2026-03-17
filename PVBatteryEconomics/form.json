@@ -97,6 +97,26 @@
               "digits": 4
             }
           ]
+        },
+        {
+          "type": "Label",
+          "caption": "Optional: Dynamischer Bezugspreis aus Archivvariable (z. B. Cent/kWh) überschreibt den festen Bezugspreis stündlich."
+        },
+        {
+          "type": "RowLayout",
+          "items": [
+            {
+              "type": "SelectVariable",
+              "name": "ImportPriceVarID",
+              "caption": "Variable dynamischer Bezugspreis"
+            },
+            {
+              "type": "NumberSpinner",
+              "name": "ImportPriceUnitToEur",
+              "caption": "Umrechnung auf EUR (z. B. 0.01 bei Cent)",
+              "digits": 4
+            }
+          ]
         }
       ]
     },

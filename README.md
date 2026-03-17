@@ -61,6 +61,8 @@ Interne Festwerte:
 - Preise:
   - Bezugspreis (EUR/kWh)
   - Einspeisevergütung (EUR/kWh)
+  - Optional: dynamischer Bezugspreis aus Variable (stündlich)
+  - Optional: Umrechnung auf EUR (z. B. `0.01` bei Cent-Werten)
 - Batterieparameter:
   - Kapazität
   - Lade-/Entladeleistung
