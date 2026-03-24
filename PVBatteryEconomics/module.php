@@ -146,12 +146,14 @@ class PVBatteryEconomics extends IPSModuleStrict
             $avoidedImportCostEUR = $economics['avoided_import_cost_eur'];
             $lostFeedInRevenueEUR = $lostFeedInKWh * $priceExport;
             $netBenefitEUR = $avoidedImportCostEUR - $lostFeedInRevenueEUR;
+            $periodYears = $this->calculatePeriodYears($hourKeys);
+            $annualNetBenefitEUR = $periodYears > 0.0 ? ($netBenefitEUR / $periodYears) : 0.0;
 
             $capacity = $this->ReadPropertyFloat('BatteryCapacity');
             $cycles = $capacity > 0.0 ? ($simulation['discharged_to_load_kwh'] / $capacity) : 0.0;
 
             $invest = $this->ReadPropertyFloat('BatteryInvest');
-            $paybackYears = $netBenefitEUR > 0.0 ? ($invest / $netBenefitEUR) : -1.0;
+            $paybackYears = $annualNetBenefitEUR > 0.0 ? ($invest / $annualNetBenefitEUR) : -1.0;
 
             $this->SetValue('BaselineImportKWh', round($baseline['import_kwh'], 3));
             $this->SetValue('BaselineExportKWh', round($baseline['export_kwh'], 3));
@@ -655,6 +657,19 @@ class PVBatteryEconomics extends IPSModuleStrict
             'avoided_import_cost_eur' => $baseImportCost - $simImportCost,
             'lost_feed_in_kwh' => $lostFeedInKwh
         ];
+    }
+
+    private function calculatePeriodYears(array $hourKeys): float
+    {
+        if (count($hourKeys) === 0) {
+            return 0.0;
+        }
+
+        $startTs = (int) $hourKeys[0];
+        $endTs = (int) end($hourKeys) + self::SECONDS_PER_HOUR;
+        $durationSeconds = max(0, $endTs - $startTs);
+
+        return $durationSeconds / (365.25 * self::SECONDS_PER_DAY);
     }
 }
 
