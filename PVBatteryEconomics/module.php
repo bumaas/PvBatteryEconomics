@@ -530,7 +530,7 @@ class PVBatteryEconomics extends IPSModuleStrict
         $this->SendDebug(
             'ImportPriceCoverage',
             sprintf(
-                'Preisvariable %d: %d Stundenwerte geladen, erste verfuegbare Stunde: %s, letzte verfuegbare Stunde: %s',
+                'Preisvariable %d: %d Stundenwerte geladen, erste verfügbare Stunde: %s, letzte verfügbare Stunde: %s',
                 $priceVarId,
                 count($hourlyDynamic),
                 $firstAvailableTs === null ? 'n/a' : date('Y-m-d H:i:s', (int) $firstAvailableTs),
@@ -553,7 +553,7 @@ class PVBatteryEconomics extends IPSModuleStrict
             $this->SendDebug(
                 'ImportPriceMissingHour',
                 sprintf(
-                    'Preisvariable %d unvollstaendig: %d von %d benoetigten Stunden vorhanden. Erste fehlende Stunde: %s.',
+                    'Preisvariable %d unvollständig: %d von %d benötigten Stunden vorhanden. Erste fehlende Stunde: %s.',
                     $priceVarId,
                     count($prices),
                     count($hourKeys),
@@ -562,7 +562,7 @@ class PVBatteryEconomics extends IPSModuleStrict
                 0
             );
             throw new RuntimeException(sprintf(
-                'Dynamischer Bezugspreis unvollstaendig. Vorhanden: %d von %d Stunden. Erste fehlende Stunde: %s (Preisvariable %d).',
+                'Dynamischer Bezugspreis unvollständig. Vorhanden: %d von %d Stunden. Erste fehlende Stunde: %s (Preisvariable %d).',
                 count($prices),
                 count($hourKeys),
                 date('Y-m-d H:i:s', $missingHours[0]),
@@ -605,7 +605,7 @@ class PVBatteryEconomics extends IPSModuleStrict
             return $hours;
         }
 
-        throw new RuntimeException(sprintf('Keine Aggregatwerte fuer dynamischen Bezugspreis gefunden (Variable %d). Bitte Logging/Archivierung und Zeitraum pruefen.', $varId));
+        throw new RuntimeException(sprintf('Keine Aggregatwerte für dynamischen Bezugspreis gefunden (Variable %d). Bitte Logging/Archivierung und Zeitraum prüfen.', $varId));
     }
 
     private function extractHourlyScalarValue(array $row, float $unitFactor): ?float
