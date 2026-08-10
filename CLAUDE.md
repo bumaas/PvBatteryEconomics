@@ -93,11 +93,17 @@ geschlüsselt** sind (`$hourlyImport[$ts]`, `$hourlyExport[$ts]`, `$hourlyImport
   `SendDebug()`-Texte: reine Entwickler-Ausgaben, bewusst deutsch und nicht übersetzt.
   Jede Textänderung sofort mit `tests/check_locale.php` gegenprüfen (0 fehlend **und**
   0 verwaist).
-- **Darstellung:** Das Modul nutzt noch Legacy-Profile (`~Electricity`, `~Euro`), keine
-  Presentations.
+- **Darstellung:** Presentations, keine Profile. `getValuePresentation()` liefert die
+  `VARIABLE_PRESENTATION_VALUE_PRESENTATION`-Arrays für kWh- und EUR-Werte (Nachfolger von
+  `~Electricity`/`~Euro`); `Summary` nutzt dieselbe Presentation mit `MULTILINE`.
 - **Version/Build:** `library.json` im Wurzelverzeichnis pflegen (`build` +1, `date` auf
   `date +%s`), Commit-Subject `1.0 build <NN>: <Beschreibung>`.
 
-## Bekannte Lücken gegenüber dem eigenen Modul-Standard
+## Altlast in Bestandsinstanzen
 
-Offen: noch Legacy-Profile (`~Electricity`, `~Euro`) statt Presentations.
+Ältere Modulversionen legten zusätzlich `ExtraPotential*`-Variablen an
+(„Zusatzakku-Potenzial …"). Der heutige Code registriert sie nicht mehr, entfernt sie aber
+auch nicht — in Bestandsinstanzen (z. B. #43810) hängen sie als verwaiste Variablen mit
+Legacy-Profil unter der Instanz. Wer sie aufräumen will, braucht ein einmaliges
+`UnregisterVariable()` in `ApplyChanges()`; das löscht Anwenderdaten und ist bewusst noch
+nicht implementiert.

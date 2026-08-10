@@ -53,26 +53,47 @@ class PVBatteryEconomics extends IPSModuleStrict
 
     private function registerStatusVariables(): void
     {
-        $this->RegisterVariableString('Summary', $this->Translate('Summary'), '', 10);
-        $this->RegisterVariableFloat('BaselineImportKWh', $this->Translate('Grid import without battery (kWh)'), '~Electricity', 20);
-        $this->RegisterVariableFloat('BaselineExportKWh', $this->Translate('Grid feed-in without battery (kWh)'), '~Electricity', 30);
-        $this->RegisterVariableFloat('BaselineCostEUR', $this->Translate('Costs without battery (EUR)'), '~Euro', 40);
+        $energy   = $this->getValuePresentation('Electricity', ' kWh');
+        $currency = $this->getValuePresentation('Euro', ' €');
+        $plain    = $this->getValuePresentation('', '');
 
-        $this->RegisterVariableFloat('SimImportKWh', $this->Translate('Grid import with battery (kWh)'), '~Electricity', 50);
-        $this->RegisterVariableFloat('SimExportKWh', $this->Translate('Grid feed-in with battery (kWh)'), '~Electricity', 60);
-        $this->RegisterVariableFloat('SimCostEUR', $this->Translate('Costs with battery (EUR)'), '~Euro', 70);
+        $this->RegisterVariableString('Summary', $this->Translate('Summary'), [
+            'PRESENTATION' => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
+            'MULTILINE'    => true
+        ], 10);
+        $this->RegisterVariableFloat('BaselineImportKWh', $this->Translate('Grid import without battery (kWh)'), $energy, 20);
+        $this->RegisterVariableFloat('BaselineExportKWh', $this->Translate('Grid feed-in without battery (kWh)'), $energy, 30);
+        $this->RegisterVariableFloat('BaselineCostEUR', $this->Translate('Costs without battery (EUR)'), $currency, 40);
 
-        $this->RegisterVariableFloat('SavingEUR', $this->Translate('Saving (EUR)'), '~Euro', 80);
-        $this->RegisterVariableFloat('PaybackYears', $this->Translate('Payback period (years)'), '', 90);
-        $this->RegisterVariableFloat('EquivalentCycles', $this->Translate('Equivalent full cycles'), '', 100);
+        $this->RegisterVariableFloat('SimImportKWh', $this->Translate('Grid import with battery (kWh)'), $energy, 50);
+        $this->RegisterVariableFloat('SimExportKWh', $this->Translate('Grid feed-in with battery (kWh)'), $energy, 60);
+        $this->RegisterVariableFloat('SimCostEUR', $this->Translate('Costs with battery (EUR)'), $currency, 70);
 
-        $this->RegisterVariableFloat('AvoidedImportKWh', $this->Translate('Avoided grid import (kWh)'), '~Electricity', 101);
-        $this->RegisterVariableFloat('LostFeedInKWh', $this->Translate('Reduced feed-in (kWh)'), '~Electricity', 102);
-        $this->RegisterVariableFloat('AvoidedImportCostEUR', $this->Translate('Avoided import costs (EUR)'), '~Euro', 103);
-        $this->RegisterVariableFloat('LostFeedInRevenueEUR', $this->Translate('Lost feed-in revenue (EUR)'), '~Euro', 104);
-        $this->RegisterVariableFloat('ChargedFromPvKWh', $this->Translate('Charged into battery (kWh)'), '~Electricity', 110);
-        $this->RegisterVariableFloat('DischargedToLoadKWh', $this->Translate('Discharged from battery to load (kWh)'), '~Electricity', 120);
-        $this->RegisterVariableFloat('BatteryLossesKWh', $this->Translate('Battery losses (kWh)'), '~Electricity', 130);
+        $this->RegisterVariableFloat('SavingEUR', $this->Translate('Saving (EUR)'), $currency, 80);
+        $this->RegisterVariableFloat('PaybackYears', $this->Translate('Payback period (years)'), $plain, 90);
+        $this->RegisterVariableFloat('EquivalentCycles', $this->Translate('Equivalent full cycles'), $plain, 100);
+
+        $this->RegisterVariableFloat('AvoidedImportKWh', $this->Translate('Avoided grid import (kWh)'), $energy, 101);
+        $this->RegisterVariableFloat('LostFeedInKWh', $this->Translate('Reduced feed-in (kWh)'), $energy, 102);
+        $this->RegisterVariableFloat('AvoidedImportCostEUR', $this->Translate('Avoided import costs (EUR)'), $currency, 103);
+        $this->RegisterVariableFloat('LostFeedInRevenueEUR', $this->Translate('Lost feed-in revenue (EUR)'), $currency, 104);
+        $this->RegisterVariableFloat('ChargedFromPvKWh', $this->Translate('Charged into battery (kWh)'), $energy, 110);
+        $this->RegisterVariableFloat('DischargedToLoadKWh', $this->Translate('Discharged from battery to load (kWh)'), $energy, 120);
+        $this->RegisterVariableFloat('BatteryLossesKWh', $this->Translate('Battery losses (kWh)'), $energy, 130);
+    }
+
+    /**
+     * Darstellung für einen Zahlenwert (Nachfolger der Profile ~Electricity/~Euro).
+     */
+    private function getValuePresentation(string $icon, string $suffix): array
+    {
+        return [
+            'PRESENTATION'        => VARIABLE_PRESENTATION_VALUE_PRESENTATION,
+            'ICON'                => $icon,
+            'DIGITS'              => 2,
+            'SUFFIX'              => $suffix,
+            'THOUSANDS_SEPARATOR' => 'Client'
+        ];
     }
 
     public function Calculate(): void
