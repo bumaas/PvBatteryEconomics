@@ -1,5 +1,7 @@
 ﻿# PVBatteryEconomics (Symcon)
 
+[![Checks](https://github.com/bumaas/PvBatteryEconomics/actions/workflows/check.yml/badge.svg)](https://github.com/bumaas/PvBatteryEconomics/actions/workflows/check.yml)
+
 Symcon Modul zur wirtschaftlichen Bewertung eines Batteriespeichers auf Basis von stündlich aggregierten Zählerdaten.
 
 Das Modul vergleicht:
