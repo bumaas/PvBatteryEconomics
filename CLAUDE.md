@@ -85,10 +85,14 @@ geschlüsselt** sind (`$hourlyImport[$ts]`, `$hourlyExport[$ts]`, `$hourlyImport
 - **Neue Konfiguration = zwei Stellen:** `RegisterProperty*` in `Create()` **und** ein Element
   mit identischem `name` in `form.json`. Statusvariablen ausschließlich in
   `registerStatusVariables()` (wird aus `Create()` *und* `ApplyChanges()` gerufen).
-- **Sprache:** Bezeichner/Idents und Array-Schlüssel englisch, alle Anwendertexte deutsch mit
-  echten Umlauten. Es gibt **keine** `locale.json` — die Texte stehen direkt in `form.json` und
-  `module.php`. Wer Übersetzungen einführt, muss `form.json` erst auf englische Schlüssel
-  umstellen.
+- **Sprache:** Bezeichner/Idents und Array-Schlüssel englisch. Anwendertexte stehen **englisch**
+  in `form.json` und als `$this->Translate('…')` in `module.php` — dieser englische Text ist
+  zugleich der Übersetzungsschlüssel; `PVBatteryEconomics/locale.json` liefert das Deutsche
+  (echte Umlaute). `sprintf`-Platzhalter gehören mit in den Schlüssel
+  (`sprintf($this->Translate('Grid import: %.1f kWh'), …)`). Ausgenommen sind die
+  `SendDebug()`-Texte: reine Entwickler-Ausgaben, bewusst deutsch und nicht übersetzt.
+  Jede Textänderung sofort mit `tests/check_locale.php` gegenprüfen (0 fehlend **und**
+  0 verwaist).
 - **Darstellung:** Das Modul nutzt noch Legacy-Profile (`~Electricity`, `~Euro`), keine
   Presentations.
 - **Version/Build:** `library.json` im Wurzelverzeichnis pflegen (`build` +1, `date` auf
@@ -96,6 +100,4 @@ geschlüsselt** sind (`$hourlyImport[$ts]`, `$hourlyExport[$ts]`, `$hourlyImport
 
 ## Bekannte Lücken gegenüber dem eigenen Modul-Standard
 
-Offen (Vorlagen jeweils aus `T:\modules\BlindControl`): `locale.json` fehlt — solange sie
-fehlt, überspringt `tests/check_locale.php` das Modul und prüft nichts. Außerdem noch
-Legacy-Profile statt Presentations.
+Offen: noch Legacy-Profile (`~Electricity`, `~Euro`) statt Presentations.

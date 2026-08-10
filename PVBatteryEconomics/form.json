@@ -2,19 +2,19 @@
   "elements": [
     {
       "type": "Label",
-      "caption": "Dieses Modul simuliert stundenweise, wie sich ein Batteriespeicher auf Netzbezug, Einspeisung und Kosten auswirkt."
+      "caption": "This module simulates hour by hour how a battery storage affects grid import, feed-in and costs."
     },
     {
       "type": "Label",
-      "caption": "Hinweis: Für plausible Ergebnisse sind korrekt aggregierte kWh-Werte entscheidend."
+      "caption": "Note: Correctly aggregated kWh values are essential for plausible results."
     },
     {
       "type": "ExpansionPanel",
-      "caption": "1) Zeitraum",
+      "caption": "1) Period",
       "items": [
         {
           "type": "Label",
-          "caption": "Bitte den Auswertezeitraum festlegen. Für eine belastbare Aussage wird typischerweise ein volles Jahr verwendet."
+          "caption": "Please define the evaluation period. A full year is typically used for a reliable statement."
         },
         {
           "type": "RowLayout",
@@ -22,12 +22,12 @@
             {
               "type": "ValidationTextBox",
               "name": "StartDate",
-              "caption": "Datum von (YYYY-MM-DD HH:MM:SS)"
+              "caption": "Date from (YYYY-MM-DD HH:MM:SS)"
             },
             {
               "type": "ValidationTextBox",
               "name": "EndDate",
-              "caption": "Datum bis (YYYY-MM-DD HH:MM:SS)"
+              "caption": "Date to (YYYY-MM-DD HH:MM:SS)"
             }
           ]
         }
@@ -35,11 +35,11 @@
     },
     {
       "type": "ExpansionPanel",
-      "caption": "2) Datenquellen",
+      "caption": "2) Data sources",
       "items": [
         {
           "type": "Label",
-          "caption": "Wähle die Zählervariablen für Netzbezug und Netzeinspeisung."
+          "caption": "Select the meter variables for grid import and grid feed-in."
         },
         {
           "type": "RowLayout",
@@ -47,18 +47,18 @@
             {
               "type": "SelectVariable",
               "name": "GridImportVarID",
-              "caption": "Zähler Netzbezug"
+              "caption": "Grid import meter"
             },
             {
               "type": "SelectVariable",
               "name": "GridExportVarID",
-              "caption": "Zähler Netzeinspeisung"
+              "caption": "Grid feed-in meter"
             }
           ]
         },
         {
           "type": "Label",
-          "caption": "Umrechnungsfaktor auf kWh (-): 1.0 bei kWh-Werten, 0.001 bei Wh-Werten."
+          "caption": "Conversion factor to kWh (-): 1.0 for kWh values, 0.001 for Wh values."
         },
         {
           "type": "RowLayout",
@@ -66,7 +66,7 @@
             {
               "type": "NumberSpinner",
               "name": "CounterUnitToKWh",
-              "caption": "Umrechnungsfaktor auf kWh (-)",
+              "caption": "Conversion factor to kWh (-)",
               "digits": 4
             }
           ]
@@ -75,11 +75,11 @@
     },
     {
       "type": "ExpansionPanel",
-      "caption": "3) Preise",
+      "caption": "3) Prices",
       "items": [
         {
           "type": "Label",
-          "caption": "Trage Bezugspreis und Einspeisevergütung in EUR/kWh ein."
+          "caption": "Enter the import price and the feed-in tariff in EUR/kWh."
         },
         {
           "type": "RowLayout",
@@ -87,20 +87,20 @@
             {
               "type": "NumberSpinner",
               "name": "PriceImport",
-              "caption": "Bezugspreis (EUR/kWh)",
+              "caption": "Import price (EUR/kWh)",
               "digits": 4
             },
             {
               "type": "NumberSpinner",
               "name": "PriceExport",
-              "caption": "Einspeisevergütung (EUR/kWh)",
+              "caption": "Feed-in tariff (EUR/kWh)",
               "digits": 4
             }
           ]
         },
         {
           "type": "Label",
-          "caption": "Optional: Dynamischer Bezugspreis aus Archivvariable (z. B. Cent/kWh) überschreibt den festen Bezugspreis stündlich."
+          "caption": "Optional: a dynamic import price from an archived variable (e.g. cent/kWh) overrides the fixed import price on an hourly basis."
         },
         {
           "type": "RowLayout",
@@ -108,12 +108,12 @@
             {
               "type": "SelectVariable",
               "name": "ImportPriceVarID",
-              "caption": "Variable dynamischer Bezugspreis"
+              "caption": "Dynamic import price variable"
             },
             {
               "type": "NumberSpinner",
               "name": "ImportPriceUnitToEur",
-              "caption": "Umrechnung auf EUR (z. B. 0.01 bei Cent)",
+              "caption": "Conversion to EUR (e.g. 0.01 for cent)",
               "digits": 4
             }
           ]
@@ -122,11 +122,11 @@
     },
     {
       "type": "ExpansionPanel",
-      "caption": "4) Batterieparameter",
+      "caption": "4) Battery parameters",
       "items": [
         {
           "type": "Label",
-          "caption": "Technische Daten des geplanten Speichers. Wirkungsgrade als Wert zwischen 0 und 1."
+          "caption": "Technical data of the planned storage. Efficiencies as a value between 0 and 1."
         },
         {
           "type": "RowLayout",
@@ -134,7 +134,7 @@
             {
               "type": "NumberSpinner",
               "name": "BatteryCapacity",
-              "caption": "Nutzbare Kapazität (kWh)",
+              "caption": "Usable capacity (kWh)",
               "digits": 3
             }
           ]
@@ -145,13 +145,13 @@
             {
               "type": "NumberSpinner",
               "name": "BatteryMaxCharge",
-              "caption": "Max. Ladeleistung (kW)",
+              "caption": "Max. charge power (kW)",
               "digits": 3
             },
             {
               "type": "NumberSpinner",
               "name": "BatteryMaxDischarge",
-              "caption": "Max. Entladeleistung (kW)",
+              "caption": "Max. discharge power (kW)",
               "digits": 3
             }
           ]
@@ -162,13 +162,13 @@
             {
               "type": "NumberSpinner",
               "name": "BatteryChargeEff",
-              "caption": "Ladewirkungsgrad (-)",
+              "caption": "Charge efficiency (-)",
               "digits": 4
             },
             {
               "type": "NumberSpinner",
               "name": "BatteryDischargeEff",
-              "caption": "Entladewirkungsgrad (-)",
+              "caption": "Discharge efficiency (-)",
               "digits": 4
             }
           ]
@@ -176,23 +176,23 @@
         {
           "type": "NumberSpinner",
           "name": "BatteryInvest",
-          "caption": "Investition (EUR)",
+          "caption": "Investment (EUR)",
           "digits": 2
         }
       ]
     },
     {
       "type": "ExpansionPanel",
-      "caption": "5) Plausibilität",
+      "caption": "5) Plausibility",
       "items": [
         {
           "type": "Label",
-          "caption": "Wenn der berechnete Netzbezug darunter liegt, erscheint ein Hinweis auf möglich falsche Einheiten/Archiveinstellungen."
+          "caption": "If the calculated grid import falls below this value, a note about possibly wrong units or archive settings appears."
         },
         {
           "type": "NumberSpinner",
           "name": "LowImportWarningThreshold",
-          "caption": "Warnschwelle niedriger Netzbezug (kWh/Jahr)",
+          "caption": "Warning threshold for low grid import (kWh/year)",
           "digits": 1
         }
       ]
@@ -201,7 +201,7 @@
   "actions": [
     {
       "type": "Button",
-      "caption": "Berechnung starten",
+      "caption": "Start calculation",
       "onClick": "PVBAT_Calculate($id);"
     }
   ],
@@ -209,8 +209,7 @@
     {
       "code": 201,
       "icon": "error",
-      "caption": "Konfiguration unvollständig"
+      "caption": "Configuration incomplete"
     }
   ]
 }
-

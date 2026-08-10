@@ -53,26 +53,26 @@ class PVBatteryEconomics extends IPSModuleStrict
 
     private function registerStatusVariables(): void
     {
-        $this->RegisterVariableString('Summary', 'Zusammenfassung', '', 10);
-        $this->RegisterVariableFloat('BaselineImportKWh', 'Netzbezug ohne Batterie (kWh)', '~Electricity', 20);
-        $this->RegisterVariableFloat('BaselineExportKWh', 'Netzeinspeisung ohne Batterie (kWh)', '~Electricity', 30);
-        $this->RegisterVariableFloat('BaselineCostEUR', 'Kosten ohne Batterie (EUR)', '~Euro', 40);
+        $this->RegisterVariableString('Summary', $this->Translate('Summary'), '', 10);
+        $this->RegisterVariableFloat('BaselineImportKWh', $this->Translate('Grid import without battery (kWh)'), '~Electricity', 20);
+        $this->RegisterVariableFloat('BaselineExportKWh', $this->Translate('Grid feed-in without battery (kWh)'), '~Electricity', 30);
+        $this->RegisterVariableFloat('BaselineCostEUR', $this->Translate('Costs without battery (EUR)'), '~Euro', 40);
 
-        $this->RegisterVariableFloat('SimImportKWh', 'Netzbezug mit Batterie (kWh)', '~Electricity', 50);
-        $this->RegisterVariableFloat('SimExportKWh', 'Netzeinspeisung mit Batterie (kWh)', '~Electricity', 60);
-        $this->RegisterVariableFloat('SimCostEUR', 'Kosten mit Batterie (EUR)', '~Euro', 70);
+        $this->RegisterVariableFloat('SimImportKWh', $this->Translate('Grid import with battery (kWh)'), '~Electricity', 50);
+        $this->RegisterVariableFloat('SimExportKWh', $this->Translate('Grid feed-in with battery (kWh)'), '~Electricity', 60);
+        $this->RegisterVariableFloat('SimCostEUR', $this->Translate('Costs with battery (EUR)'), '~Euro', 70);
 
-        $this->RegisterVariableFloat('SavingEUR', 'Ersparnis (EUR)', '~Euro', 80);
-        $this->RegisterVariableFloat('PaybackYears', 'Amortisation (Jahre)', '', 90);
-        $this->RegisterVariableFloat('EquivalentCycles', 'Äquivalente Vollzyklen', '', 100);
+        $this->RegisterVariableFloat('SavingEUR', $this->Translate('Saving (EUR)'), '~Euro', 80);
+        $this->RegisterVariableFloat('PaybackYears', $this->Translate('Payback period (years)'), '', 90);
+        $this->RegisterVariableFloat('EquivalentCycles', $this->Translate('Equivalent full cycles'), '', 100);
 
-        $this->RegisterVariableFloat('AvoidedImportKWh', 'Vermiedener Netzbezug (kWh)', '~Electricity', 101);
-        $this->RegisterVariableFloat('LostFeedInKWh', 'Weniger Einspeisung (kWh)', '~Electricity', 102);
-        $this->RegisterVariableFloat('AvoidedImportCostEUR', 'Vermiedene Bezugskosten (EUR)', '~Euro', 103);
-        $this->RegisterVariableFloat('LostFeedInRevenueEUR', 'Entgangene Einspeisevergütung (EUR)', '~Euro', 104);
-        $this->RegisterVariableFloat('ChargedFromPvKWh', 'In Batterie geladen (kWh)', '~Electricity', 110);
-        $this->RegisterVariableFloat('DischargedToLoadKWh', 'Aus Batterie an Last (kWh)', '~Electricity', 120);
-        $this->RegisterVariableFloat('BatteryLossesKWh', 'Batterieverluste (kWh)', '~Electricity', 130);
+        $this->RegisterVariableFloat('AvoidedImportKWh', $this->Translate('Avoided grid import (kWh)'), '~Electricity', 101);
+        $this->RegisterVariableFloat('LostFeedInKWh', $this->Translate('Reduced feed-in (kWh)'), '~Electricity', 102);
+        $this->RegisterVariableFloat('AvoidedImportCostEUR', $this->Translate('Avoided import costs (EUR)'), '~Euro', 103);
+        $this->RegisterVariableFloat('LostFeedInRevenueEUR', $this->Translate('Lost feed-in revenue (EUR)'), '~Euro', 104);
+        $this->RegisterVariableFloat('ChargedFromPvKWh', $this->Translate('Charged into battery (kWh)'), '~Electricity', 110);
+        $this->RegisterVariableFloat('DischargedToLoadKWh', $this->Translate('Discharged from battery to load (kWh)'), '~Electricity', 120);
+        $this->RegisterVariableFloat('BatteryLossesKWh', $this->Translate('Battery losses (kWh)'), '~Electricity', 130);
     }
 
     public function Calculate(): void
@@ -82,13 +82,13 @@ class PVBatteryEconomics extends IPSModuleStrict
             $exportVarId = $this->ReadPropertyInteger('GridExportVarID');
 
             if ($importVarId <= 0 || $exportVarId <= 0) {
-                throw new RuntimeException('Variablen-IDs für Netzbezug/Netzeinspeisung sind nicht gesetzt.');
+                throw new RuntimeException($this->Translate('Variable IDs for grid import/grid feed-in are not set.'));
             }
 
             $startTs = strtotime($this->ReadPropertyString('StartDate'));
             $endTs = strtotime($this->ReadPropertyString('EndDate'));
             if ($startTs === false || $endTs === false || $endTs <= $startTs) {
-                throw new RuntimeException('Ungültiges Datum in StartDate/EndDate.');
+                throw new RuntimeException($this->Translate('Invalid date in StartDate/EndDate.'));
             }
 
             $archiveId = $this->getArchiveId();
@@ -102,7 +102,7 @@ class PVBatteryEconomics extends IPSModuleStrict
             ) + 1;
             if (count($hourlyImport) === 0 || count($hourlyExport) === 0) {
                 throw new RuntimeException(sprintf(
-                    'Keine ausreichenden Stundendaten im Zeitraum %s bis %s. Netzbezug: %d Stunden, Einspeisung: %d Stunden, erwartet: %d Stunden.',
+                    $this->Translate('Not enough hourly data in the period %s to %s. Grid import: %d hours, feed-in: %d hours, expected: %d hours.'),
                     date('Y-m-d H:i:s', $startTs),
                     date('Y-m-d H:i:s', $endTs),
                     count($hourlyImport),
@@ -115,7 +115,7 @@ class PVBatteryEconomics extends IPSModuleStrict
             sort($hourKeys);
             if ($hourKeys === []) {
                 throw new RuntimeException(sprintf(
-                    'Keine gemeinsamen Stundenwerte gefunden. Netzbezug: %d Stunden, Einspeisung: %d Stunden im Zeitraum %s bis %s.',
+                    $this->Translate('No common hourly values found. Grid import: %d hours, feed-in: %d hours in the period %s to %s.'),
                     count($hourlyImport),
                     count($hourlyExport),
                     date('Y-m-d H:i:s', $startTs),
@@ -215,7 +215,7 @@ class PVBatteryEconomics extends IPSModuleStrict
             $this->SetStatus(IS_ACTIVE);
         } catch (Throwable $e) {
             $this->SendDebug('Calculate', $e->getMessage(), 0);
-            $this->SetValue('Summary', 'Fehler: ' . $e->getMessage());
+            $this->SetValue('Summary', sprintf($this->Translate('Error: %s'), $e->getMessage()));
             $this->SetStatus(IS_EBASE + 1);
             throw $e;
         }
@@ -235,36 +235,36 @@ class PVBatteryEconomics extends IPSModuleStrict
         float $lostFeedInRevenueEUR
     ): string {
         $lines = [];
-        $lines[] = '--- Batteriesimulation (stündlich) ---';
-        $lines[] = sprintf('Zeitraum: %s bis %s', date('Y-m-d H:i', $hourKeys[0]), date('Y-m-d H:i', end($hourKeys) + self::SECONDS_PER_HOUR));
+        $lines[] = $this->Translate('--- Battery simulation (hourly) ---');
+        $lines[] = sprintf($this->Translate('Period: %s to %s'), date('Y-m-d H:i', $hourKeys[0]), date('Y-m-d H:i', end($hourKeys) + self::SECONDS_PER_HOUR));
         $lines[] = '';
-        $lines[] = '[Ohne Batterie]';
-        $lines[] = sprintf('Netzbezug: %.1f kWh', $baseline['import_kwh']);
-        $lines[] = sprintf('Netzeinspeisung: %.1f kWh', $baseline['export_kwh']);
-        $lines[] = sprintf('Kosten: %.2f EUR', $baseCost);
+        $lines[] = $this->Translate('[Without battery]');
+        $lines[] = sprintf($this->Translate('Grid import: %.1f kWh'), $baseline['import_kwh']);
+        $lines[] = sprintf($this->Translate('Grid feed-in: %.1f kWh'), $baseline['export_kwh']);
+        $lines[] = sprintf($this->Translate('Costs: %.2f EUR'), $baseCost);
         $lines[] = '';
-        $lines[] = '[Mit Batterie]';
-        $lines[] = sprintf('Netzbezug: %.1f kWh', $simulation['import_kwh']);
-        $lines[] = sprintf('Netzeinspeisung: %.1f kWh', $simulation['export_kwh']);
-        $lines[] = sprintf('Kosten: %.2f EUR', $simCost);
+        $lines[] = $this->Translate('[With battery]');
+        $lines[] = sprintf($this->Translate('Grid import: %.1f kWh'), $simulation['import_kwh']);
+        $lines[] = sprintf($this->Translate('Grid feed-in: %.1f kWh'), $simulation['export_kwh']);
+        $lines[] = sprintf($this->Translate('Costs: %.2f EUR'), $simCost);
         $lines[] = '';
-        $lines[] = '[Wirtschaftlichkeit]';
-        $lines[] = sprintf('Ersparnis: %.2f EUR', $saving);
-        $lines[] = sprintf('Vermiedener Netzbezug: %.1f kWh', $avoidedImportKWh);
-        $lines[] = sprintf('Weniger Einspeisung: %.1f kWh', $lostFeedInKWh);
-        $lines[] = sprintf('Vermiedene Bezugskosten: %.2f EUR', $avoidedImportCostEUR);
-        $lines[] = sprintf('Entgangene Einspeisevergütung: %.2f EUR', $lostFeedInRevenueEUR);
-        $lines[] = sprintf('Netto-Vorteil: %.2f EUR', $avoidedImportCostEUR - $lostFeedInRevenueEUR);
+        $lines[] = $this->Translate('[Economics]');
+        $lines[] = sprintf($this->Translate('Saving: %.2f EUR'), $saving);
+        $lines[] = sprintf($this->Translate('Avoided grid import: %.1f kWh'), $avoidedImportKWh);
+        $lines[] = sprintf($this->Translate('Reduced feed-in: %.1f kWh'), $lostFeedInKWh);
+        $lines[] = sprintf($this->Translate('Avoided import costs: %.2f EUR'), $avoidedImportCostEUR);
+        $lines[] = sprintf($this->Translate('Lost feed-in revenue: %.2f EUR'), $lostFeedInRevenueEUR);
+        $lines[] = sprintf($this->Translate('Net benefit: %.2f EUR'), $avoidedImportCostEUR - $lostFeedInRevenueEUR);
         if ($paybackYears > 0) {
-            $lines[] = sprintf('Amortisation: %.1f Jahre', $paybackYears);
+            $lines[] = sprintf($this->Translate('Payback period: %.1f years'), $paybackYears);
         } else {
-            $lines[] = 'Amortisation: nicht erreichbar';
+            $lines[] = $this->Translate('Payback period: not achievable');
         }
 
         if ($baseline['import_kwh'] < $this->ReadPropertyFloat('LowImportWarningThreshold')) {
             $lines[] = '';
-            $lines[] = '[Hinweis]';
-            $lines[] = 'Netzbezug wirkt für den Zeitraum sehr niedrig. Bitte Einheit und Archiv-Aggregation prüfen.';
+            $lines[] = $this->Translate('[Note]');
+            $lines[] = $this->Translate('The grid import seems very low for this period. Please check the unit and the archive aggregation.');
         }
 
         return implode("\n", $lines);
@@ -274,7 +274,7 @@ class PVBatteryEconomics extends IPSModuleStrict
     {
         $ids = IPS_GetInstanceListByModuleID('{43192F0B-135B-4CE7-A0A7-1475603F3060}');
         if (!isset($ids[0])) {
-            throw new RuntimeException('Archive-Control-Instanz nicht gefunden.');
+            throw new RuntimeException($this->Translate('Archive control instance not found.'));
         }
 
         return (int) $ids[0];
@@ -287,7 +287,7 @@ class PVBatteryEconomics extends IPSModuleStrict
 
         $rows = AC_GetAggregatedValues($archiveId, $varId, 0, $firstHour, $lastHourStart + self::SECONDS_PER_HOUR, 0);
         if (!is_array($rows) || count($rows) === 0) {
-            throw new RuntimeException(sprintf('Keine aggregierten Werte für Variable %d gefunden.', $varId));
+            throw new RuntimeException(sprintf($this->Translate('No aggregated values found for variable %d.'), $varId));
         }
 
         $hours = [];
@@ -562,7 +562,7 @@ class PVBatteryEconomics extends IPSModuleStrict
                 0
             );
             throw new RuntimeException(sprintf(
-                'Dynamischer Bezugspreis unvollständig. Vorhanden: %d von %d Stunden. Erste fehlende Stunde: %s (Preisvariable %d).',
+                $this->Translate('Dynamic import price incomplete. Available: %d of %d hours. First missing hour: %s (price variable %d).'),
                 count($prices),
                 count($hourKeys),
                 date('Y-m-d H:i:s', $missingHours[0]),
@@ -605,7 +605,7 @@ class PVBatteryEconomics extends IPSModuleStrict
             return $hours;
         }
 
-        throw new RuntimeException(sprintf('Keine Aggregatwerte für dynamischen Bezugspreis gefunden (Variable %d). Bitte Logging/Archivierung und Zeitraum prüfen.', $varId));
+        throw new RuntimeException(sprintf($this->Translate('No aggregated values found for the dynamic import price (variable %d). Please check logging/archiving and the period.'), $varId));
     }
 
     private function extractHourlyScalarValue(array $row, float $unitFactor): ?float
