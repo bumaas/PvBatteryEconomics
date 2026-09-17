@@ -1,7 +1,5 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
 ## Was das Modul ist
 
 Symcon-Modulbibliothek mit **einem** Modul (`PVBatteryEconomics`, Präfix `PVBAT`, Typ 3 =
@@ -12,15 +10,9 @@ und hat keinen Timer; alles läuft synchron im Button `PVBAT_Calculate($id)`.
 
 ## Wichtig: Das Repo liegt im Produktivverzeichnis
 
-`T:\modules\PVBatteryEconomics` ist das laufende Symcon-Modulverzeichnis (`\\nuc\Symcon`).
-Eine Änderung an `module.php` ist sofort auf der Produktivinstallation. Nach Änderungen an
-`module.json`/`library.json` (nicht bei reinen PHP-Änderungen) die Bibliothek neu einlesen:
-
-```bash
-C:/php/php C:/Users/Burkhard/.claude/tools/symcon_rpc.php MC_ReloadModule 51062 '"PVBatteryEconomics"'
-```
-
-Keine losen Dateien im Repo-Wurzelverzeichnis anlegen, die dort nicht hingehören.
+Änderungen an `module.php` wirken sofort auf dem nuc; nach Änderungen an
+`module.json`/`library.json` `MC_ReloadModule` mit Ordnername `PVBatteryEconomics` (Details und
+Regeln zum Produktivverzeichnis: globale CLAUDE.md).
 
 ## Prüfen / „Testen"
 
@@ -96,8 +88,7 @@ geschlüsselt** sind (`$hourlyImport[$ts]`, `$hourlyExport[$ts]`, `$hourlyImport
 - **Darstellung:** Presentations, keine Profile. `getValuePresentation()` liefert die
   `VARIABLE_PRESENTATION_VALUE_PRESENTATION`-Arrays für kWh- und EUR-Werte (Nachfolger von
   `~Electricity`/`~Euro`); `Summary` nutzt dieselbe Presentation mit `MULTILINE`.
-- **Version/Build:** `library.json` im Wurzelverzeichnis pflegen (`build` +1, `date` auf
-  `date +%s`), Commit-Subject `1.0 build <NN>: <Beschreibung>`.
+- **Version/Build:** siehe globale CLAUDE.md („Build-/Versionspflege").
 
 ## Altlast in Bestandsinstanzen
 
