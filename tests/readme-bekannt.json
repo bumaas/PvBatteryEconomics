@@ -1,0 +1,15 @@
+{
+    "hinweis": "Doku-Lücken bei Einführung von tests/check-readme.php. Nur streichen, nie ergänzen - neue Felder und Funktionen gehören in die Doku.",
+    "offen": [
+        "feld:PVBatteryEconomics:BatteryCapacity",
+        "feld:PVBatteryEconomics:BatteryChargeEff",
+        "feld:PVBatteryEconomics:BatteryDischargeEff",
+        "feld:PVBatteryEconomics:BatteryInvest",
+        "feld:PVBatteryEconomics:BatteryMaxCharge",
+        "feld:PVBatteryEconomics:BatteryMaxDischarge",
+        "feld:PVBatteryEconomics:CounterUnitToKWh",
+        "feld:PVBatteryEconomics:ImportPriceUnitToEur",
+        "feld:PVBatteryEconomics:ImportPriceVarID",
+        "feld:PVBatteryEconomics:LowImportWarningThreshold"
+    ]
+}
